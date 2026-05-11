@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\HeartRateController;
 
 // ── Login ──
 Route::get('/', [AuthController::class, 'showLogin'])->name('login');
@@ -21,3 +22,10 @@ Route::get('/history', [HomeController::class, 'history'])->name('history');
 
 // ── Logout ──
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// ── Heart Rate Data Storage ──
+Route::post('/heart-rate/store', [HeartRateController::class, 'store']);
+
+Route::get('/ping', function () {
+    return 'pong';
+});
