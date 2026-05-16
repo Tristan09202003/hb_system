@@ -26,5 +26,15 @@ class HeartRateController extends Controller
             'success' => true,
             'message' => 'Heart rate stored successfully'
         ]);
+        
     }
+
+    public function latest()
+{
+    $latest = DB::table('heart_rate_logs')
+        ->latest('recorded_at')
+        ->first();
+
+    return response()->json($latest);
+}
 }

@@ -26,6 +26,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // ── Heart Rate Data Storage ──
 Route::post('/heart-rate/store', [HeartRateController::class, 'store']);
 
+// ── Latest Heart Rate Data Retrieval ──
+Route::get('/heart-rate/latest', [HeartRateController::class, 'latest']);
+
 Route::get('/ping', function () {
     return 'pong';
 });

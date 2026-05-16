@@ -350,18 +350,29 @@
       <tr><td>#${r.id}</td><td>${r.bpm}</td><td class="st-${r.cls}">${r.label}</td><td>${r.time}</td></tr>`).join('');
         }
 
-        // ── Poll your ESP32 API every 2.5 seconds ──
-        function fetchLatest() {
-            fetch('/api/get_data.php')
-                .then(r => r.json())
-                .then(data => {
-                    if (data && data.bpm) addReading(data.bpm);
-                })
-                .catch(() => {}); // silently fail if device not connected
-        }
+    let lastRecordId = null;
 
-        initChart();
-        setInterval(fetchLatest, 2500);
+    function fetchLatest() {
+        fetch('/heart-rate/latest')
+            .then(r => r.json())
+            .then(data => {
+                if (!data || !data.bpm) return;
+
+                // prevent adding the same database record again and again
+                if (lastRecordId === data.id) return;
+                lastRecordId = data.id;
+
+                addReading(parseInt(data.bpm));
+            })
+            .catch(error => {
+                console.error('Live fetch error:', error);
+            });
+    }
+
+    initChart();
+    fetchLatest();
+    setInterval(fetchLatest, 2500);
+
     </script>
 </body>
 </html>

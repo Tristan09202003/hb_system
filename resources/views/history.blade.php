@@ -389,10 +389,14 @@
         // ── Chart ──
         const chartData = @json($chartData);
 
-        // Format each point's time into a short date label e.g. "Apr 28"
+        // Format chart labels safely
         const dateLabels = chartData.map(d => {
-            const date = new Date(d.time);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const safeDate = new Date(d.time.replace(' ', 'T'));
+
+            return safeDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
         });
 
         const ctx = document.getElementById('trendChart').getContext('2d');
