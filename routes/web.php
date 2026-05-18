@@ -17,6 +17,10 @@ Route::post('/register', [AuthController::class, 'register']);
 // ── Dashboard ──
 Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
 
+// ── Patients ──
+Route::get('/patients', [HomeController::class, 'patients'])->name('patients');
+Route::get('/patients/{id}/history', [HomeController::class, 'patientHistory'])->name('patients.history');
+
 // ── History ──
 Route::get('/history', [HomeController::class, 'history'])->name('history');
 
