@@ -419,14 +419,14 @@
 
 <!-- Topbar -->
 <div class="topbar">
-    <a class="logo" href="/">
+    <div class="logo" aria-label="CardioWatch">
         <div class="wm-icon">
             <svg width="16" height="16" viewBox="0 0 28 28" fill="none">
                 <path d="M2 14h5l3-8 4 16 3-10 3 6 2-4h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </div>
         <div class="brand"><span>Cardio</span>Watch</div>
-    </a>
+    </div>
 
     <div class="topbar-right">
         <div class="live-badge"><div class="pulse-dot"></div>Live</div>
@@ -750,12 +750,14 @@
         });
     }
 
-    function addReading(bpm) {
-        const key  = classify(bpm);
-        const lbl  = statusLabel(key);
-        const cls  = statusClass(key);
-        const ic   = statusIcon(key);
-        const time = new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    function addReading(bpm, savedStatus = null, savedTime = null) {
+        const key  = savedStatus ? savedStatus.toLowerCase() : classify(bpm);
+        const lbl  = savedStatus || statusLabel(key);
+        const cls  = key === 'normal' ? 'normal' : key === 'warning' || key.startsWith('warn') ? 'warning' : 'danger';
+        const ic   = statusIcon(cls);
+        const time = savedTime
+            ? new Date(savedTime).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            : new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
         counter++;
         readings.unshift({ id: counter, bpm, lbl, cls, time });
@@ -786,15 +788,20 @@
         chart.update('none');
 
             document.getElementById('logBody').innerHTML = readings.slice(0, 20).map(r => `
-      <tr><td>#${r.id}</td><td>${r.bpm}</td><td class="st-${r.cls}">${r.label}</td><td>${r.time}</td></tr>`).join('');
+      <tr><td>#${r.id}</td><td>${r.bpm}</td><td class="st-${r.cls}">${r.lbl}</td><td>${r.time}</td></tr>`).join('');
         }
 
-        // ── Poll your ESP32 API every 2.5 seconds ──
+        let latestReadingId = null;
+
+        // ── Poll the latest saved reading every 2.5 seconds ──
         function fetchLatest() {
-            fetch('/api/get_data.php')
+            fetch('/heart-rate/latest')
                 .then(r => r.json())
                 .then(data => {
-                    if (data && data.bpm) addReading(data.bpm);
+                    if (data && data.bpm && data.id !== latestReadingId) {
+                        latestReadingId = data.id;
+                        addReading(data.bpm, data.status, data.recorded_at);
+                    }
                 })
                 .catch(() => {}); // silently fail if device not connected
         }

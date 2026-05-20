@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    private const HEART_RATE_DEVICE_CODE = 'ESP32-001';
+
     public function showRegister()
     {
         return view('register');
@@ -59,6 +61,26 @@ class AuthController extends Controller
             'user_id' => $user->id,
             'full_name' => $user->full_name,
         ]);
+
+        $device = DB::table('devices')
+            ->where('device_code', self::HEART_RATE_DEVICE_CODE)
+            ->first();
+
+        if ($device) {
+            DB::table('devices')
+                ->where('id', $device->id)
+                ->update([
+                    'user_id' => $user->id,
+                    'updated_at' => now(),
+                ]);
+        } else {
+            DB::table('devices')->insert([
+                'user_id' => $user->id,
+                'device_code' => self::HEART_RATE_DEVICE_CODE,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         return redirect('/dashboard');
     }

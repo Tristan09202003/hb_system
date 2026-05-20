@@ -303,14 +303,14 @@
 
 <!-- Topbar -->
 <div class="topbar">
-    <a class="logo" href="/">
+    <div class="logo" aria-label="CardioWatch">
         <div class="wm-icon">
             <svg width="16" height="16" viewBox="0 0 28 28" fill="none">
                 <path d="M2 14h5l3-8 4 16 3-10 3 6 2-4h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </div>
         <div class="brand"><span>Cardio</span>Watch</div>
-    </a>
+    </div>
 
     <div class="topbar-right">
         <button id="themeBtn" class="theme-toggle" aria-label="Toggle theme">
@@ -322,6 +322,7 @@
                 <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
             </svg>
         </button>
+        <a href="/dashboard" class="btn-outline">Dashboard</a>
         <div class="divider"></div>
         <form method="POST" action="/logout" style="margin:0">
             @csrf
@@ -517,6 +518,68 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script>
+        /* ── Theme ── */
+        const html     = document.documentElement;
+        const themeBtn = document.getElementById('themeBtn');
+        const themeIco = document.getElementById('themeIcon');
+
+        const moonSVG = `<circle cx="12" cy="12" r="5.5" fill="currentColor" stroke="none"/><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor" stroke="none"/>`;
+        const sunSVG  = `<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`;
+
+        let trendChart;
+
+        function getChartColors() {
+            const dark = html.getAttribute('data-theme') === 'dark';
+
+            return {
+                line: dark ? '#E24B4A' : '#C93C3B',
+                fill: dark ? 'rgba(226,75,74,.08)' : 'rgba(201,60,59,.07)',
+                grid: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.06)',
+                tick: dark ? '#6b6b7a' : '#9098a8',
+                normal: dark ? '#97C459' : '#2a6e24',
+                warning: dark ? '#EF9F27' : '#7a4a00',
+                danger: dark ? '#E24B4A' : '#C93C3B',
+            };
+        }
+
+        function statusPointColor(status) {
+            const colors = getChartColors();
+
+            return status === 'Normal'
+                ? colors.normal
+                : status === 'Warning'
+                    ? colors.warning
+                    : colors.danger;
+        }
+
+        function updateChartColors() {
+            if (!trendChart) return;
+
+            const colors = getChartColors();
+            trendChart.data.datasets[0].borderColor = colors.line;
+            trendChart.data.datasets[0].backgroundColor = colors.fill;
+            trendChart.data.datasets[0].pointBackgroundColor = chartData.map(d => statusPointColor(d.status));
+            trendChart.options.scales.x.ticks.color = colors.tick;
+            trendChart.options.scales.y.ticks.color = colors.tick;
+            trendChart.options.scales.y.grid.color = colors.grid;
+            trendChart.update('none');
+        }
+
+        const savedTheme = localStorage.getItem('cw-theme');
+        if (savedTheme && savedTheme !== 'light') {
+            html.setAttribute('data-theme', savedTheme);
+            themeIco.innerHTML = moonSVG;
+        }
+
+        themeBtn.addEventListener('click', () => {
+            const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+
+            html.setAttribute('data-theme', next);
+            themeIco.innerHTML = next === 'light' ? sunSVG : moonSVG;
+            localStorage.setItem('cw-theme', next);
+            updateChartColors();
+        });
+
         // ── Chart ──
         const chartData = @json($chartData);
 
@@ -526,21 +589,19 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         });
 
+    const chartColors = getChartColors();
     const ctx = document.getElementById('trendChart').getContext('2d');
-    new Chart(ctx, {
+    trendChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: dateLabels,
             datasets: [{
                 data: chartData.map(d => d.bpm),
-                borderColor: '#C93C3B',
-                backgroundColor: 'rgba(201,60,59,.07)',
+                borderColor: chartColors.line,
+                backgroundColor: chartColors.fill,
                 borderWidth: 2,
                 pointRadius: 4,
-                pointBackgroundColor: chartData.map(d =>
-                    d.status === 'Normal'  ? '#2a6e24' :
-                    d.status === 'Warning' ? '#7a4a00' : '#C93C3B'
-                ),
+                pointBackgroundColor: chartData.map(d => statusPointColor(d.status)),
                 pointBorderColor: 'transparent',
                 pointBorderWidth: 0,
                 tension: .35,
@@ -565,14 +626,14 @@
             scales: {
                 x: {
                     display: true,
-                    ticks: { color: '#9098a8', font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
+                    ticks: { color: chartColors.tick, font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
                     grid: { display: false },
                     border: { display: false }
                 },
                 y: {
                     min: 30, max: 160,
-                    grid: { color: 'rgba(0,0,0,.06)' },
-                    ticks: { color: '#9098a8', font: { size: 10 }, stepSize: 20 },
+                    grid: { color: chartColors.grid },
+                    ticks: { color: chartColors.tick, font: { size: 10 }, stepSize: 20 },
                     border: { display: false }
                 }
             }
